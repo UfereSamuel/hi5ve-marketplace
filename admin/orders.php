@@ -92,7 +92,7 @@ include 'includes/admin_header.php';
                 </div>
                 <div class="ml-4">
                     <h3 class="text-lg font-semibold text-gray-800">Total Orders</h3>
-                    <p class="text-3xl font-bold text-blue-600"><?= $order_stats['total_orders'] ?></p>
+                    <p class="text-3xl font-bold text-blue-600"><?= $order_stats['total_orders'] ?? 0 ?></p>
                 </div>
             </div>
         </div>
@@ -104,7 +104,7 @@ include 'includes/admin_header.php';
                 </div>
                 <div class="ml-4">
                     <h3 class="text-lg font-semibold text-gray-800">Pending Orders</h3>
-                    <p class="text-3xl font-bold text-yellow-600"><?= $order_stats['pending_orders'] ?></p>
+                    <p class="text-3xl font-bold text-yellow-600"><?= $order_stats['pending_orders'] ?? 0 ?></p>
                 </div>
             </div>
         </div>
@@ -116,7 +116,7 @@ include 'includes/admin_header.php';
                 </div>
                 <div class="ml-4">
                     <h3 class="text-lg font-semibold text-gray-800">Completed Orders</h3>
-                    <p class="text-3xl font-bold text-green-600"><?= $order_stats['completed_orders'] ?></p>
+                    <p class="text-3xl font-bold text-green-600"><?= $order_stats['delivered_orders'] ?? 0 ?></p>
                 </div>
             </div>
         </div>
@@ -128,7 +128,7 @@ include 'includes/admin_header.php';
                 </div>
                 <div class="ml-4">
                     <h3 class="text-lg font-semibold text-gray-800">Total Revenue</h3>
-                    <p class="text-2xl font-bold text-purple-600"><?= formatCurrency($order_stats['total_revenue']) ?></p>
+                    <p class="text-2xl font-bold text-purple-600"><?= formatCurrency($order_stats['total_revenue'] ?? 0) ?></p>
                 </div>
             </div>
         </div>

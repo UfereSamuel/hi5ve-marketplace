@@ -61,7 +61,7 @@ include 'includes/admin_header.php';
             <p class="text-gray-600">Manage your customer base</p>
         </div>
         <div class="flex space-x-4">
-            <a href="../register.php" target="_blank" class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300">
+            <a href="add-customer.php" class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300">
                 <i class="fas fa-user-plus mr-2"></i>Add Customer
             </a>
         </div>

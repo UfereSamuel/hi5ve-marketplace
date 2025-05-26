@@ -3,6 +3,7 @@ require_once 'config/config.php';
 require_once 'classes/Product.php';
 require_once 'classes/Category.php';
 require_once 'classes/Cart.php';
+require_once 'includes/banner_display.php';
 
 $product = new Product();
 $category = new Category();
@@ -44,7 +45,19 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
 </div>
 <?php endif; ?>
 
-<!-- Hero Section -->
+<!-- Hero Banners Section -->
+<?php 
+// Check if there are any hero banners
+$banner = new Banner();
+$hero_banners = $banner->getActiveByPosition('hero');
+
+if (!empty($hero_banners)): 
+    // Display dynamic banners
+    displayBanners('hero');
+else: 
+    // Fallback to static hero section if no banners
+?>
+<!-- Static Hero Section (Fallback) -->
 <section class="hero-section bg-gradient-to-r from-green-600 to-blue-600 text-white py-20">
     <div class="container mx-auto px-4 text-center">
         <div class="flex justify-center mb-6">
@@ -64,6 +77,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == '1') {
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- Features Section -->
 <section class="py-16 bg-gray-50">

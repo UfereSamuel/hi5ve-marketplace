@@ -103,6 +103,14 @@
                 </div>
             </div>
 
+            <!-- Footer Banners -->
+            <?php 
+            if (file_exists(__DIR__ . '/banner_display.php')) {
+                require_once __DIR__ . '/banner_display.php';
+                displayBanners('footer');
+            }
+            ?>
+
             <!-- Payment Methods -->
             <div class="border-t border-gray-700 mt-8 pt-8">
                 <div class="flex flex-col md:flex-row justify-between items-center">

@@ -3,6 +3,7 @@ require_once 'config/config.php';
 require_once 'classes/Product.php';
 require_once 'classes/Category.php';
 require_once 'classes/Cart.php';
+require_once 'includes/banner_display.php';
 
 $product = new Product();
 $category = new Category();
@@ -49,6 +50,11 @@ include 'includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-8">
+    <!-- Category Top Banners -->
+    <?php if ($category_id): ?>
+        <?php displayBanners('category_top'); ?>
+    <?php endif; ?>
+
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
@@ -129,8 +135,11 @@ include 'includes/header.php';
                     </div>
                 </div>
 
+                <!-- Sidebar Banners -->
+                <?php displayBanners('sidebar'); ?>
+
                 <!-- WhatsApp Order -->
-                <div class="bg-green-50 rounded-lg p-4">
+                <div class="bg-green-50 rounded-lg p-4 mt-6">
                     <h4 class="font-semibold text-green-800 mb-2">Need Help?</h4>
                     <p class="text-sm text-green-700 mb-3">Order directly via WhatsApp for personalized assistance</p>
                     <a href="<?= getWhatsAppLink('Hello! I would like to browse your products and place an order.') ?>" 

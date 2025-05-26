@@ -46,7 +46,7 @@ if (!isLoggedIn() || !isAdmin()) {
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <span class="text-gray-700">Welcome, <?= htmlspecialchars($_SESSION['first_name']) ?>!</span>
+                    <span class="text-gray-700">Welcome, <?= htmlspecialchars($_SESSION['first_name'] ?? $_SESSION['username'] ?? 'Admin') ?>!</span>
                     <a href="../index.php" class="text-gray-600 hover:text-green-600">
                         <i class="fas fa-home mr-1"></i>View Site
                     </a>
@@ -81,6 +81,9 @@ if (!isLoggedIn() || !isAdmin()) {
                     </a>
                     <a href="customers.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : '' ?>">
                         <i class="fas fa-users mr-3"></i>Customers
+                    </a>
+                    <a href="banners.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'banners.php' ? 'active' : '' ?>">
+                        <i class="fas fa-images mr-3"></i>Banner Management
                     </a>
                     
                     <!-- Settings Dropdown -->

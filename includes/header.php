@@ -170,7 +170,7 @@
                             <div class="relative group">
                                 <button class="text-gray-700 hover:text-green-600 transition duration-300 flex items-center">
                                     <i class="fas fa-user mr-1"></i>
-                                    <?= htmlspecialchars($_SESSION['first_name']) ?>
+                                    <?= htmlspecialchars($_SESSION['first_name'] ?? $_SESSION['username'] ?? 'User') ?>
                                     <i class="fas fa-chevron-down ml-1 text-xs"></i>
                                 </button>
                                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
@@ -264,7 +264,7 @@
                     
                     <?php if (isLoggedIn()): ?>
                         <div class="border-t border-gray-200 pt-4">
-                            <p class="text-sm text-gray-500 mb-2">Welcome, <?= htmlspecialchars($_SESSION['first_name']) ?>!</p>
+                            <p class="text-sm text-gray-500 mb-2">Welcome, <?= htmlspecialchars($_SESSION['first_name'] ?? $_SESSION['username'] ?? 'User') ?>!</p>
                             <a href="profile.php" class="block text-gray-700 hover:text-green-600 transition duration-300 mb-2">
                                 <i class="fas fa-user mr-2"></i>Profile
                             </a>

@@ -185,7 +185,7 @@ switch ($action) {
         
         if (isLoggedIn()) {
             $message .= "*Customer Details:*\n";
-            $message .= "Name: {$_SESSION['first_name']} {$_SESSION['last_name']}\n";
+            $message .= "Name: " . ($_SESSION['first_name'] ?? '') . " " . ($_SESSION['last_name'] ?? '') . "\n";
             $message .= "Email: {$_SESSION['email']}\n";
         }
         
