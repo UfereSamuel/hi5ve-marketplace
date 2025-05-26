@@ -1,0 +1,191 @@
+name: Deploy Hi5ve MarketPlace
+
+on:
+  push:
+    branches: [ main, production ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mart3_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: pdo, pdo_mysql, gd, fileinfo, mbstring, zip
+        coverage: xdebug
+
+    - name: Install dependencies
+      run: |
+        if [ -f composer.json ]; then
+          composer install --no-dev --optimize-autoloader
+        fi
+
+    - name: Create test database
+      run: |
+        mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS mart3_test;"
+
+    - name: Run database migrations
+      run: |
+        # Add your database setup commands here
+        # php migrate.php or similar
+
+    - name: Run PHP syntax check
+      run: find . -name "*.php" -exec php -l {} \;
+
+    - name: Run security scan
+      run: |
+        # Install and run security scanner
+        composer require --dev sensiolabs/security-checker
+        vendor/bin/security-checker security:check
+
+    - name: Check file permissions
+      run: |
+        # Ensure sensitive files are not executable
+        find . -name "*.sql" -executable -exec echo "SQL file should not be executable: {}" \;
+        find . -name "config.php" -executable -exec echo "Config file should not be executable: {}" \;
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production'
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: pdo, pdo_mysql, gd, fileinfo, mbstring, zip
+
+    - name: Install production dependencies
+      run: |
+        if [ -f composer.json ]; then
+          composer install --no-dev --optimize-autoloader --no-interaction
+        fi
+
+    - name: Create deployment package
+      run: |
+        # Remove development files
+        rm -rf .git .github tests docs *.md
+        rm -f composer.json composer.lock
+        rm -f debug_upload.php test_upload.php check_uploads_table.php
+        rm -rf classes/SimpleFileUpload.php
+        
+        # Create deployment archive
+        tar -czf deployment.tar.gz .
+
+    - name: Deploy to shared hosting via FTP
+      uses: SamKirkland/FTP-Deploy-Action@4.3.3
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./
+        server-dir: /public_html/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/tests/**
+          **/docs/**
+          **/*.md
+          **/debug_*.php
+          **/test_*.php
+
+    - name: Deploy via SSH (alternative)
+      if: ${{ secrets.SSH_HOST }}
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          cd /home/yourusername/public_html
+          
+          # Backup current version
+          if [ -d "backup" ]; then rm -rf backup; fi
+          if [ -d "current" ]; then mv current backup; fi
+          
+          # Clone new version
+          git clone https://github.com/yourusername/hi5ve-marketplace.git current
+          cd current
+          
+          # Set permissions
+          chmod -R 755 .
+          chmod -R 777 uploads/
+          chmod -R 755 config/
+          chmod 644 .htaccess
+          
+          # Copy production config
+          cp config/production.php config/config.php
+          
+          # Run any necessary updates
+          # php update.php
+
+    - name: Database Migration (if needed)
+      if: github.ref == 'refs/heads/production'
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/yourusername/public_html/current
+          # Run database migrations
+          # php migrate.php
+
+    - name: Clear cache and optimize
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/yourusername/public_html/current
+          # Clear any cache files
+          rm -rf cache/*
+          # Optimize autoloader
+          if [ -f composer.phar ]; then
+            php composer.phar dump-autoload --optimize
+          fi
+
+    - name: Health check
+      run: |
+        # Wait a moment for deployment to complete
+        sleep 30
+        
+        # Check if site is responding
+        response=$(curl -s -o /dev/null -w "%{http_code}" https://yourdomain.com)
+        if [ $response -eq 200 ]; then
+          echo "✅ Deployment successful - Site is responding"
+        else
+          echo "❌ Deployment may have failed - Site returned $response"
+          exit 1
+        fi
+
+    - name: Notify deployment status
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow 
