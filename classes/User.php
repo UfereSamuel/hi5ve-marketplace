@@ -362,5 +362,10 @@ class User {
             return false;
         }
     }
+
+    // Get database connection (for admin operations)
+    public function getConnection() {
+        return $this->conn;
+    }
 }
 ?> 

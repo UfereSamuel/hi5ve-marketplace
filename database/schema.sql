@@ -44,7 +44,9 @@ CREATE TABLE IF NOT EXISTS products (
     featured BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    average_rating DECIMAL(3,2) DEFAULT 0.00,
+    review_count INT DEFAULT 0
 );
 
 -- Cart table (for registered users)
@@ -116,13 +118,142 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL
 );
 
--- Site settings table
-CREATE TABLE IF NOT EXISTS site_settings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    setting_key VARCHAR(100) UNIQUE NOT NULL,
-    setting_value TEXT,
+-- Admin roles and permissions
+CREATE TABLE admin_roles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    permissions JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert default admin roles
+INSERT INTO admin_roles (name, description, permissions) VALUES
+('Super Admin', 'Full system access', '["all"]'),
+('Admin', 'General admin access', '["products", "orders", "customers", "categories", "reports"]'),
+('Manager', 'Limited admin access', '["products", "orders", "categories"]'),
+('Support', 'Customer support access', '["orders", "customers"]');
+
+-- Update users table to include role_id
+ALTER TABLE users ADD COLUMN role_id INT DEFAULT NULL AFTER role;
+ALTER TABLE users ADD FOREIGN KEY (role_id) REFERENCES admin_roles(id);
+
+-- Site settings table
+CREATE TABLE site_settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT,
+    setting_type ENUM('text', 'textarea', 'number', 'boolean', 'json', 'file') DEFAULT 'text',
+    category VARCHAR(50) DEFAULT 'general',
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert default site settings
+INSERT INTO site_settings (setting_key, setting_value, setting_type, category, description) VALUES
+('site_name', 'Hi5ve MarketPlace', 'text', 'general', 'Website name'),
+('site_description', 'Your trusted online grocery marketplace', 'textarea', 'general', 'Website description'),
+('site_logo', '', 'file', 'general', 'Website logo'),
+('site_favicon', '', 'file', 'general', 'Website favicon'),
+('contact_email', 'info@hi5ve.com', 'text', 'contact', 'Contact email address'),
+('contact_phone', '+2348123456789', 'text', 'contact', 'Contact phone number'),
+('contact_address', 'Lagos, Nigeria', 'textarea', 'contact', 'Business address'),
+('whatsapp_number', '+2348123456789', 'text', 'contact', 'WhatsApp business number'),
+('currency_symbol', '₦', 'text', 'general', 'Currency symbol'),
+('currency_code', 'NGN', 'text', 'general', 'Currency code'),
+('delivery_fee', '500', 'number', 'shipping', 'Default delivery fee'),
+('free_delivery_threshold', '5000', 'number', 'shipping', 'Minimum order for free delivery'),
+('low_stock_threshold', '10', 'number', 'inventory', 'Low stock alert threshold'),
+('enable_reviews', '1', 'boolean', 'features', 'Enable product reviews'),
+('enable_wishlist', '1', 'boolean', 'features', 'Enable wishlist feature'),
+('maintenance_mode', '0', 'boolean', 'general', 'Enable maintenance mode'),
+('google_analytics', '', 'textarea', 'tracking', 'Google Analytics code'),
+('facebook_pixel', '', 'textarea', 'tracking', 'Facebook Pixel code'),
+('social_facebook', '', 'text', 'social', 'Facebook page URL'),
+('social_twitter', '', 'text', 'social', 'Twitter profile URL'),
+('social_instagram', '', 'text', 'social', 'Instagram profile URL'),
+('social_youtube', '', 'text', 'social', 'YouTube channel URL');
+
+-- Content management tables
+CREATE TABLE pages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    content LONGTEXT,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Insert default pages
+INSERT INTO pages (title, slug, content, meta_title, meta_description, created_by) VALUES
+('About Us', 'about-us', '<h2>About Hi5ve MarketPlace</h2><p>Welcome to Hi5ve MarketPlace, your trusted online grocery destination...</p>', 'About Us - Hi5ve MarketPlace', 'Learn more about Hi5ve MarketPlace and our mission', 1),
+('Privacy Policy', 'privacy-policy', '<h2>Privacy Policy</h2><p>Your privacy is important to us...</p>', 'Privacy Policy - Hi5ve MarketPlace', 'Hi5ve MarketPlace privacy policy and data protection', 1),
+('Terms of Service', 'terms-of-service', '<h2>Terms of Service</h2><p>By using our service, you agree to these terms...</p>', 'Terms of Service - Hi5ve MarketPlace', 'Hi5ve MarketPlace terms of service and conditions', 1),
+('FAQ', 'faq', '<h2>Frequently Asked Questions</h2><p>Find answers to common questions...</p>', 'FAQ - Hi5ve MarketPlace', 'Frequently asked questions about Hi5ve MarketPlace', 1);
+
+-- Blog/News system
+CREATE TABLE blog_posts (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    excerpt TEXT,
+    content LONGTEXT,
+    featured_image VARCHAR(255),
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+    author_id INT,
+    published_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+-- File uploads table
+CREATE TABLE uploads (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    filename VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_size INT,
+    mime_type VARCHAR(100),
+    uploaded_by INT,
+    upload_type ENUM('product', 'category', 'blog', 'page', 'setting', 'other') DEFAULT 'other',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+
+-- Product images table (for multiple images per product)
+CREATE TABLE product_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    image_path VARCHAR(500) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Product reviews table
+CREATE TABLE product_reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_product_review (product_id, user_id)
 );
 
 -- Insert default admin user

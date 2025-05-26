@@ -79,6 +79,35 @@ if (!isLoggedIn() || !isAdmin()) {
                     <a href="customers.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : '' ?>">
                         <i class="fas fa-users mr-3"></i>Customers
                     </a>
+                    
+                    <!-- Settings Dropdown -->
+                    <div class="mt-4">
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Settings</h4>
+                        
+                        <a href="settings.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : '' ?>">
+                            <i class="fas fa-cog mr-3"></i>Site Settings
+                        </a>
+                        
+                        <a href="admin-users.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'admin-users.php' ? 'active' : '' ?>">
+                            <i class="fas fa-user-shield mr-3"></i>Admin Users
+                        </a>
+                        
+                        <a href="roles.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'roles.php' ? 'active' : '' ?>">
+                            <i class="fas fa-key mr-3"></i>Roles & Permissions
+                        </a>
+                        
+                        <a href="pages.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'pages.php' ? 'active' : '' ?>">
+                            <i class="fas fa-file-alt mr-3"></i>Pages
+                        </a>
+                        
+                        <a href="blog.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'blog.php' ? 'active' : '' ?>">
+                            <i class="fas fa-blog mr-3"></i>Blog
+                        </a>
+                        
+                        <a href="files.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'files.php' ? 'active' : '' ?>">
+                            <i class="fas fa-folder mr-3"></i>File Manager
+                        </a>
+                    </div>
                 </nav>
             </div>
         </div>

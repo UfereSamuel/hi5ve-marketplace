@@ -164,6 +164,7 @@
                     <div class="hidden md:flex items-center space-x-6">
                         <a href="<?= SITE_URL ?>" class="text-gray-700 hover:text-green-600 transition duration-300">Home</a>
                         <a href="products.php" class="text-gray-700 hover:text-green-600 transition duration-300">Products</a>
+                        <a href="blog.php" class="text-gray-700 hover:text-green-600 transition duration-300">Blog</a>
                         
                         <?php if (isLoggedIn()): ?>
                             <div class="relative group">
@@ -234,6 +235,7 @@
                 <div class="flex flex-col space-y-4">
                     <a href="<?= SITE_URL ?>" class="text-gray-700 hover:text-green-600 transition duration-300">Home</a>
                     <a href="products.php" class="text-gray-700 hover:text-green-600 transition duration-300">Products</a>
+                    <a href="blog.php" class="text-gray-700 hover:text-green-600 transition duration-300">Blog</a>
                     
                     <?php if (isLoggedIn()): ?>
                         <div class="border-t border-gray-200 pt-4">
