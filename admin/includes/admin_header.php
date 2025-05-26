@@ -79,6 +79,12 @@ if (!isLoggedIn() || !isAdmin()) {
                     <a href="orders.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : '' ?>">
                         <i class="fas fa-shopping-cart mr-3"></i>Orders
                     </a>
+                    <a href="payments.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'payments.php' ? 'active' : '' ?>">
+                        <i class="fas fa-credit-card mr-3"></i>Payments
+                    </a>
+                    <a href="payment-settings.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'payment-settings.php' ? 'active' : '' ?>">
+                        <i class="fas fa-cogs mr-3"></i>Payment Settings
+                    </a>
                     <a href="customers.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'customers.php' ? 'active' : '' ?>">
                         <i class="fas fa-users mr-3"></i>Customers
                     </a>
