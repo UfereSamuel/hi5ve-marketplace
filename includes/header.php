@@ -181,6 +181,9 @@
                                         <a href="orders.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                             <i class="fas fa-shopping-bag mr-2"></i>My Orders
                                         </a>
+                                        <a href="wishlist.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-heart mr-2"></i>My Wishlist
+                                        </a>
                                         <?php if (isAdmin()): ?>
                                         <a href="admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                             <i class="fas fa-cog mr-2"></i>Admin Panel
@@ -199,8 +202,26 @@
                         <?php endif; ?>
                     </div>
 
+                    <!-- Wishlist (for logged in users) -->
+                    <?php if (isLoggedIn()): ?>
+                    <a href="wishlist.php" class="relative text-gray-700 hover:text-green-600 transition duration-300" title="My Wishlist">
+                        <i class="fas fa-heart text-xl"></i>
+                        <span id="wishlist-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            0
+                        </span>
+                    </a>
+                    <?php endif; ?>
+
+                    <!-- Comparison -->
+                    <a href="compare.php" class="relative text-gray-700 hover:text-green-600 transition duration-300" title="Compare Products">
+                        <i class="fas fa-balance-scale text-xl"></i>
+                        <span id="comparison-count" class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            0
+                        </span>
+                    </a>
+
                     <!-- Cart -->
-                    <a href="cart.php" class="relative text-gray-700 hover:text-green-600 transition duration-300">
+                    <a href="cart.php" class="relative text-gray-700 hover:text-green-600 transition duration-300" title="Shopping Cart">
                         <i class="fas fa-shopping-cart text-xl"></i>
                         <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                             <?= $cart_count ?? 0 ?>
@@ -236,6 +257,10 @@
                     <a href="<?= SITE_URL ?>" class="text-gray-700 hover:text-green-600 transition duration-300">Home</a>
                     <a href="products.php" class="text-gray-700 hover:text-green-600 transition duration-300">Products</a>
                     <a href="blog.php" class="text-gray-700 hover:text-green-600 transition duration-300">Blog</a>
+                    <a href="compare.php" class="text-gray-700 hover:text-green-600 transition duration-300 flex items-center">
+                        <i class="fas fa-balance-scale mr-2"></i>Compare Products
+                        <span id="mobile-comparison-count" class="ml-auto bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </a>
                     
                     <?php if (isLoggedIn()): ?>
                         <div class="border-t border-gray-200 pt-4">
@@ -245,6 +270,10 @@
                             </a>
                             <a href="orders.php" class="block text-gray-700 hover:text-green-600 transition duration-300 mb-2">
                                 <i class="fas fa-shopping-bag mr-2"></i>My Orders
+                            </a>
+                            <a href="wishlist.php" class="block text-gray-700 hover:text-green-600 transition duration-300 mb-2 flex items-center">
+                                <i class="fas fa-heart mr-2"></i>My Wishlist
+                                <span id="mobile-wishlist-count" class="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                             </a>
                             <?php if (isAdmin()): ?>
                             <a href="admin/" class="block text-gray-700 hover:text-green-600 transition duration-300 mb-2">
@@ -280,21 +309,90 @@
             mobileMenu.classList.toggle('hidden');
         });
 
-        // Update cart count on page load
+        // Update all counters on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateCartCount();
+            updateWishlistCount();
+            updateComparisonCount();
+            
+            // Hide loading screen after a short delay
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.classList.add('fade-out');
+                    setTimeout(() => loadingScreen.remove(), 500);
+                }
+            }, 1000);
         });
 
         function updateCartCount() {
             fetch('ajax/cart.php?action=count')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('cart-count').textContent = data.count || 0;
+                const count = data.count || 0;
+                document.getElementById('cart-count').textContent = count;
             })
             .catch(error => {
                 console.error('Error updating cart count:', error);
             });
         }
+
+        function updateWishlistCount() {
+            <?php if (isLoggedIn()): ?>
+            fetch('ajax/phase3.php?action=get_wishlist_count')
+            .then(response => response.json())
+            .then(data => {
+                const count = data.count || 0;
+                const wishlistCount = document.getElementById('wishlist-count');
+                const mobileWishlistCount = document.getElementById('mobile-wishlist-count');
+                
+                if (wishlistCount) wishlistCount.textContent = count;
+                if (mobileWishlistCount) mobileWishlistCount.textContent = count;
+                
+                // Hide counter if zero
+                if (count === 0) {
+                    if (wishlistCount) wishlistCount.style.display = 'none';
+                    if (mobileWishlistCount) mobileWishlistCount.style.display = 'none';
+                } else {
+                    if (wishlistCount) wishlistCount.style.display = 'flex';
+                    if (mobileWishlistCount) mobileWishlistCount.style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                console.error('Error updating wishlist count:', error);
+            });
+            <?php endif; ?>
+        }
+
+        function updateComparisonCount() {
+            fetch('ajax/phase3.php?action=get_comparison_list')
+            .then(response => response.json())
+            .then(data => {
+                const count = data.count || 0;
+                const comparisonCount = document.getElementById('comparison-count');
+                const mobileComparisonCount = document.getElementById('mobile-comparison-count');
+                
+                if (comparisonCount) comparisonCount.textContent = count;
+                if (mobileComparisonCount) mobileComparisonCount.textContent = count;
+                
+                // Hide counter if zero
+                if (count === 0) {
+                    if (comparisonCount) comparisonCount.style.display = 'none';
+                    if (mobileComparisonCount) mobileComparisonCount.style.display = 'none';
+                } else {
+                    if (comparisonCount) comparisonCount.style.display = 'flex';
+                    if (mobileComparisonCount) mobileComparisonCount.style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                console.error('Error updating comparison count:', error);
+            });
+        }
+
+        // Global functions for other pages to use
+        window.updateCartCount = updateCartCount;
+        window.updateWishlistCount = updateWishlistCount;
+        window.updateComparisonCount = updateComparisonCount;
     </script>
 </body>
 </html> 

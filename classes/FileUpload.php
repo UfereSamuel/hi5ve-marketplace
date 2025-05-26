@@ -4,13 +4,16 @@ require_once __DIR__ . '/../config/config.php';
 class FileUpload {
     private $conn;
     private $table = 'uploads';
-    private $upload_dir = '../uploads/';
+    private $upload_dir;
     private $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     private $max_size = 5242880; // 5MB
 
     public function __construct() {
         $database = new Database();
         $this->conn = $database->getConnection();
+        
+        // Set absolute path for uploads directory
+        $this->upload_dir = __DIR__ . '/../uploads/';
         
         // Create upload directories if they don't exist
         $this->createDirectories();
@@ -61,23 +64,23 @@ class FileUpload {
             // Resize image if needed
             $this->resizeImage($full_path, $type);
 
-            // Save to database
-            $upload_id = $this->saveToDatabase($filename, $file['name'], $file_path, $file['size'], $file['type'], $user_id, $type);
-
-            if ($upload_id) {
-                return [
-                    'success' => true,
-                    'upload_id' => $upload_id,
-                    'filename' => $filename,
-                    'file_path' => $file_path,
-                    'full_path' => $full_path,
-                    'url' => $this->getFileUrl($file_path)
-                ];
-            } else {
-                // Clean up file if database save failed
-                unlink($full_path);
-                return ['success' => false, 'message' => 'Failed to save file information'];
+            // Try to save to database (optional - don't fail if this fails)
+            $upload_id = null;
+            try {
+                $upload_id = $this->saveToDatabase($filename, $file['name'], $file_path, $file['size'], $file['type'], $user_id, $type);
+            } catch (Exception $e) {
+                // Log the error but don't fail the upload
+                error_log("Database save failed for upload: " . $e->getMessage());
             }
+
+            return [
+                'success' => true,
+                'upload_id' => $upload_id,
+                'filename' => $filename,
+                'file_path' => $file_path,
+                'full_path' => $full_path,
+                'url' => $this->getFileUrl($file_path)
+            ];
 
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Upload error: ' . $e->getMessage()];

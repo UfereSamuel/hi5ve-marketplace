@@ -2,9 +2,11 @@
 require_once '../config/config.php';
 require_once '../classes/Product.php';
 require_once '../classes/Category.php';
+require_once '../classes/FileUpload.php';
 
 $product = new Product();
 $category = new Category();
+$fileUpload = new FileUpload();
 
 $error = '';
 $success = '';
@@ -14,6 +16,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'add':
+                // Handle image upload
+                $image_filename = '';
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $user_id = $_SESSION['user_id'] ?? 1; // Use session user_id or default to 1
+                    $upload_result = $fileUpload->upload($_FILES['image'], 'product', $user_id);
+                    if ($upload_result['success']) {
+                        $image_filename = $upload_result['filename'];
+                    } else {
+                        $error = $upload_result['message'];
+                        break;
+                    }
+                }
+                
                 $data = [
                     'name' => sanitizeInput($_POST['name']),
                     'description' => sanitizeInput($_POST['description']),
@@ -22,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'discount_price' => !empty($_POST['discount_price']) ? (float)$_POST['discount_price'] : null,
                     'stock_quantity' => (int)$_POST['stock_quantity'],
                     'unit' => sanitizeInput($_POST['unit']),
-                    'image' => '', // TODO: Handle file upload
-                    'gallery' => '', // TODO: Handle multiple images
+                    'image' => $image_filename,
+                    'gallery' => '', // TODO: Handle multiple images in future
                     'featured' => isset($_POST['featured']) ? 1 : 0
                 ];
                 
@@ -37,6 +52,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'edit':
                 $id = (int)$_POST['id'];
+                
+                // Get current product data
+                $current_product = $product->getById($id);
+                $image_filename = $current_product['image']; // Keep existing image by default
+                
+                // Handle image upload if new image is provided
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $user_id = $_SESSION['user_id'] ?? 1; // Use session user_id or default to 1
+                    $upload_result = $fileUpload->upload($_FILES['image'], 'product', $user_id);
+                    if ($upload_result['success']) {
+                        // Delete old image if it exists
+                        if ($current_product['image'] && file_exists('../uploads/products/' . $current_product['image'])) {
+                            unlink('../uploads/products/' . $current_product['image']);
+                        }
+                        $image_filename = $upload_result['filename'];
+                    } else {
+                        $error = $upload_result['message'];
+                        break;
+                    }
+                }
+                
                 $data = [
                     'name' => sanitizeInput($_POST['name']),
                     'description' => sanitizeInput($_POST['description']),
@@ -45,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'discount_price' => !empty($_POST['discount_price']) ? (float)$_POST['discount_price'] : null,
                     'stock_quantity' => (int)$_POST['stock_quantity'],
                     'unit' => sanitizeInput($_POST['unit']),
-                    'image' => '', // TODO: Handle file upload
-                    'gallery' => '', // TODO: Handle multiple images
+                    'image' => $image_filename,
+                    'gallery' => $current_product['gallery'], // Keep existing gallery
                     'featured' => isset($_POST['featured']) ? 1 : 0
                 ];
                 
@@ -59,6 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'delete':
                 $id = (int)$_POST['id'];
+                
+                // Get product data to delete associated image
+                $product_data = $product->getById($id);
+                if ($product_data && $product_data['image'] && file_exists('../uploads/products/' . $product_data['image'])) {
+                    unlink('../uploads/products/' . $product_data['image']);
+                }
+                
                 if ($product->delete($id)) {
                     $success = 'Product deleted successfully!';
                 } else {
@@ -132,7 +175,7 @@ include 'includes/admin_header.php';
             <?= $edit_product ? 'Edit Product' : 'Add New Product' ?>
         </h2>
         
-        <form method="POST" action="" class="grid md:grid-cols-2 gap-6">
+        <form method="POST" action="" class="grid md:grid-cols-2 gap-6" enctype="multipart/form-data">
             <input type="hidden" name="action" value="<?= $edit_product ? 'edit' : 'add' ?>">
             <?php if ($edit_product): ?>
             <input type="hidden" name="id" value="<?= $edit_product['id'] ?>">
@@ -211,6 +254,30 @@ include 'includes/admin_header.php';
                            class="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-300 focus:ring focus:ring-green-200 focus:ring-opacity-50">
                     <span class="ml-2 text-sm text-gray-700">Featured Product</span>
                 </label>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                
+                <?php if ($edit_product && $edit_product['image']): ?>
+                <div class="mb-3">
+                    <p class="text-sm text-gray-600 mb-2">Current Image:</p>
+                    <img src="../uploads/products/<?= $edit_product['image'] ?>" 
+                         alt="Current product image" 
+                         class="h-20 w-20 rounded-lg object-cover border border-gray-300">
+                </div>
+                <?php endif; ?>
+                
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="image" name="image" 
+                           accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                           onchange="previewImage(this)"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <div id="image-preview" class="hidden">
+                        <img id="preview-img" src="" alt="Preview" class="h-20 w-20 rounded-lg object-cover border border-gray-300">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB</p>
             </div>
             
             <div class="md:col-span-2 flex space-x-4">
@@ -383,6 +450,28 @@ function toggleAddForm() {
 
 function cancelForm() {
     window.location.href = 'products.php';
+}
+
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+function confirmDelete(message) {
+    return confirm(message);
 }
 </script>
 

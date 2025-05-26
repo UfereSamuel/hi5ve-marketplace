@@ -33,7 +33,7 @@ class Category {
     // Get all categories
     public function getAll($active_only = true) {
         try {
-            $where_clause = $active_only ? "WHERE status = 'active'" : "";
+            $where_clause = $active_only ? "WHERE c.status = 'active'" : "";
             
             $query = "SELECT c.*, COUNT(p.id) as product_count 
                      FROM " . $this->table . " c 

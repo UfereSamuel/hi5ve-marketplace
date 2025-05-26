@@ -67,6 +67,9 @@ if (!isLoggedIn() || !isAdmin()) {
                     <a href="index.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">
                         <i class="fas fa-tachometer-alt mr-3"></i>Dashboard
                     </a>
+                    <a href="analytics.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'analytics.php' ? 'active' : '' ?>">
+                        <i class="fas fa-chart-bar mr-3"></i>Analytics
+                    </a>
                     <a href="products.php" class="sidebar-link flex items-center px-4 py-2 rounded-lg transition duration-300 <?= basename($_SERVER['PHP_SELF']) == 'products.php' ? 'active' : '' ?>">
                         <i class="fas fa-box mr-3"></i>Products
                     </a>
