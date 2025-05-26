@@ -1,6 +1,7 @@
 <?php
 require_once 'config/config.php';
 require_once 'classes/Cart.php';
+require_once 'classes/UserProfile.php';
 
 $cart = new Cart();
 $user_id = isLoggedIn() ? $_SESSION['user_id'] : null;
@@ -9,11 +10,37 @@ $user_id = isLoggedIn() ? $_SESSION['user_id'] : null;
 $cart_summary = $cart->getSummary($user_id);
 $cart_count = $cart_summary['total_items'];
 
+// Check profile completion for logged-in users
+$profile_complete = true;
+$missing_fields = [];
+$user_data = null;
+
+if (isLoggedIn()) {
+    $userProfile = new UserProfile();
+    $profile_check = $userProfile->isProfileComplete($_SESSION['user_id']);
+    $profile_complete = $profile_check['complete'];
+    $missing_fields = $profile_check['missing'];
+    $user_data = $userProfile->getUserProfile($_SESSION['user_id']);
+}
+
 $page_title = "Shopping Cart";
 include 'includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-8">
+    <!-- Checkout Error Message -->
+    <?php if (isset($_SESSION['checkout_error'])): ?>
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span><?= htmlspecialchars($_SESSION['checkout_error']) ?></span>
+        </div>
+    </div>
+    <?php 
+    unset($_SESSION['checkout_error']); 
+    endif; 
+    ?>
+
     <div class="flex items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">Shopping Cart</h1>
         <span class="ml-4 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
@@ -187,11 +214,19 @@ include 'includes/header.php';
                     </button>
                     
                     <!-- Regular Checkout -->
+                    <?php if (isLoggedIn()): ?>
+                    <button onclick="proceedToCheckout()" 
+                            class="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-credit-card mr-2"></i>
+                        Proceed to Checkout
+                    </button>
+                    <?php else: ?>
                     <a href="checkout.php" 
                        class="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 flex items-center justify-center">
                         <i class="fas fa-credit-card mr-2"></i>
                         Proceed to Checkout
                     </a>
+                    <?php endif; ?>
                     
                     <?php if (!isLoggedIn()): ?>
                     <div class="text-center text-sm text-gray-600 mt-4">
@@ -218,6 +253,103 @@ include 'includes/header.php';
     
     <?php endif; ?>
 </div>
+
+<!-- Profile Completion Modal -->
+<?php if (isLoggedIn()): ?>
+<div id="profileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">Complete Your Profile</h3>
+                    <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">Please complete your profile information to proceed with checkout.</p>
+            </div>
+            
+            <form id="profileForm" class="p-6">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                            <input type="text" 
+                                   name="first_name" 
+                                   id="first_name"
+                                   value="<?= htmlspecialchars($user_data['first_name'] ?? '') ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                            <input type="text" 
+                                   name="last_name" 
+                                   id="last_name"
+                                   value="<?= htmlspecialchars($user_data['last_name'] ?? '') ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                        <input type="email" 
+                               name="email" 
+                               id="email"
+                               value="<?= htmlspecialchars($user_data['email'] ?? '') ?>"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                               required>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                            <input type="tel" 
+                                   name="phone" 
+                                   id="phone"
+                                   value="<?= htmlspecialchars($user_data['phone'] ?? '') ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                   required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Alternative Phone</label>
+                            <input type="tel" 
+                                   name="alternative_phone" 
+                                   id="alternative_phone"
+                                   value="<?= htmlspecialchars($user_data['alternative_phone'] ?? '') ?>"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
+                        <textarea name="address" 
+                                  id="address"
+                                  rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                  placeholder="Enter your complete delivery address"
+                                  required><?= htmlspecialchars($user_data['address'] ?? '') ?></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex space-x-3">
+                    <button type="button" 
+                            onclick="closeProfileModal()"
+                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300">
+                        <span id="updateButtonText">Update & Continue</span>
+                        <i id="updateButtonSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 function updateQuantity(productId, quantity) {
@@ -319,6 +451,12 @@ function clearCart() {
 }
 
 function whatsappCheckout() {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+    button.disabled = true;
+    
     fetch('ajax/cart.php', {
         method: 'POST',
         headers: {
@@ -326,23 +464,41 @@ function whatsappCheckout() {
         },
         body: 'action=whatsapp_checkout'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
         if (data.success) {
             showNotification(data.message, 'success');
-            window.open(data.whatsapp_link, '_blank');
+            // Small delay to show success message before opening WhatsApp
+            setTimeout(() => {
+                window.open(data.whatsapp_link, '_blank');
+            }, 500);
         } else {
-            showNotification(data.message, 'error');
-            if (data.errors) {
+            showNotification(data.message || 'Failed to process WhatsApp checkout', 'error');
+            if (data.errors && Array.isArray(data.errors)) {
                 data.errors.forEach(error => {
-                    showNotification(error.message, 'error');
+                    if (error.message) {
+                        showNotification(error.message, 'error');
+                    }
                 });
             }
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        showNotification('An error occurred', 'error');
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        console.error('WhatsApp checkout error:', error);
+        showNotification('Unable to process WhatsApp checkout. Please try again.', 'error');
     });
 }
 
@@ -371,6 +527,87 @@ function showNotification(message, type) {
         notification.remove();
     }, 3000);
 }
+
+// Profile completion and checkout functions
+function proceedToCheckout() {
+    <?php if (!$profile_complete): ?>
+    // Show profile completion modal
+    showProfileModal();
+    <?php else: ?>
+    // Profile is complete, proceed to checkout
+    window.location.href = 'checkout.php';
+    <?php endif; ?>
+}
+
+function showProfileModal() {
+    document.getElementById('profileModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Handle profile form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const updateButton = this.querySelector('button[type="submit"]');
+            const buttonText = document.getElementById('updateButtonText');
+            const buttonSpinner = document.getElementById('updateButtonSpinner');
+            
+            // Show loading state
+            updateButton.disabled = true;
+            buttonText.textContent = 'Updating...';
+            buttonSpinner.classList.remove('hidden');
+            
+            fetch('ajax/update_profile.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    
+                    if (data.redirect_to_checkout) {
+                        // Profile is now complete, close modal and redirect
+                        setTimeout(() => {
+                            closeProfileModal();
+                            window.location.href = 'checkout.php';
+                        }, 1000);
+                    } else {
+                        // Reset button state
+                        updateButton.disabled = false;
+                        buttonText.textContent = 'Update & Continue';
+                        buttonSpinner.classList.add('hidden');
+                    }
+                } else {
+                    showNotification(data.message, 'error');
+                    
+                    // Reset button state
+                    updateButton.disabled = false;
+                    buttonText.textContent = 'Update & Continue';
+                    buttonSpinner.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Profile update error:', error);
+                showNotification('An error occurred while updating your profile. Please try again.', 'error');
+                
+                // Reset button state
+                updateButton.disabled = false;
+                buttonText.textContent = 'Update & Continue';
+                buttonSpinner.classList.add('hidden');
+            });
+        });
+    }
+});
 </script>
 
 <?php include 'includes/footer.php'; ?> 

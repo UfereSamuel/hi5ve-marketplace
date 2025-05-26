@@ -4,6 +4,7 @@ require_once 'config/config.php';
 require_once 'classes/Cart.php';
 require_once 'classes/PaymentGateway.php';
 require_once 'classes/Order.php';
+require_once 'classes/UserProfile.php';
 
 // Check if user is logged in or has guest cart
 if (!isset($_SESSION['user_id']) && !isset($_SESSION['guest_id'])) {
@@ -21,6 +22,25 @@ $cart_items = $cart->getItems($_SESSION['user_id'] ?? null);
 if (empty($cart_items)) {
     header('Location: cart.php');
     exit();
+}
+
+// Check profile completion for logged-in users
+$profile_complete = true;
+$user_data = null;
+
+if (isset($_SESSION['user_id'])) {
+    $userProfile = new UserProfile();
+    $profile_check = $userProfile->isProfileComplete($_SESSION['user_id']);
+    $profile_complete = $profile_check['complete'];
+    
+    if (!$profile_complete) {
+        // Redirect back to cart with profile completion requirement
+        $_SESSION['checkout_error'] = 'Please complete your profile information before proceeding to checkout.';
+        header('Location: cart.php');
+        exit();
+    }
+    
+    $user_data = $userProfile->getUserProfile($_SESSION['user_id']);
 }
 
 // Calculate totals
@@ -162,15 +182,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get public keys for frontend payment integration
 $public_keys = $paymentGateway->getPublicKeys();
 
-// Safely get user session data with fallbacks
+// Get user data for form pre-filling
 $default_name = '';
 $default_email = '';
 $default_phone = '';
+$default_address = '';
 
-if (isset($_SESSION['user_id'])) {
-    $default_name = trim(($_SESSION['first_name'] ?? '') . ' ' . ($_SESSION['last_name'] ?? ''));
-    $default_email = $_SESSION['email'] ?? '';
-    $default_phone = $_SESSION['phone'] ?? '';
+if (isset($_SESSION['user_id']) && $user_data) {
+    $default_name = trim(($user_data['first_name'] ?? '') . ' ' . ($user_data['last_name'] ?? ''));
+    $default_email = $user_data['email'] ?? '';
+    $default_phone = $user_data['phone'] ?? '';
+    $default_address = $user_data['address'] ?? '';
 }
 
 $page_title = "Checkout";
@@ -311,7 +333,7 @@ include 'includes/header.php';
                                           rows="3"
                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                           placeholder="Enter your complete delivery address including landmarks"
-                                          required><?= htmlspecialchars($_POST['delivery_address'] ?? '') ?></textarea>
+                                          required><?= htmlspecialchars($_POST['delivery_address'] ?? $default_address) ?></textarea>
                             </div>
 
                             <div class="md:col-span-2">
